@@ -6,12 +6,17 @@ using namespace std;
 
 int main()
 {
-  Tablero t(3, 3);
+  Tablero t(4, 2);
 
-  Conecta4 c(t, 2);
+  Conecta4 c(t, 8);
   c.calcularMejorMovimiento();
 
-  ArbolGeneral<Tablero> a = c.obtenerArbol();
+  auto a = c.obtenerArbol();
+
+  std::cout << "Altura del primer nivel: " << a.altura(a.raiz()) << std::endl;
+  std::cout << "Altura del segundo nivel: " << a.altura(a.raiz()->izqda->drcha) << std::endl;
+  std::cout << "Altura del tercer nivel: " << a.altura(a.raiz()->izqda->izqda->drcha) << std::endl;
+  std::cout << "Altura del cuarto nivel: " << a.altura(a.raiz()->izqda->izqda->izqda->drcha) << std::endl;
 
   //a.recorrer_por_niveles(a.raiz());
 
