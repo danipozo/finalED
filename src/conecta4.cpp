@@ -20,18 +20,37 @@ void Conecta4::generarArbolMovimientos(ArbolGeneral<Tablero>::Nodo n, int p)
         continue;
 
     copiaTablero = n->etiqueta;
-
-    //copiaTablero.cambiarTurno();
     copiaTablero.colocarFicha(i);
 
-    ArbolGeneral<Tablero> a(copiaTablero); // WARNING: might explode.
+    ArbolGeneral<Tablero> a(copiaTablero);
     arbol.insertar_hijomasizquierda(n, a);
 
     generarArbolMovimientos(n->izqda, p+1);
   }
 }
 
+// FIXME: ONLY FOR TESTING PURPOSES.
+#include <utility>
+
+std::ostream& operator<<(std::ostream& os, std::pair<Tablero,int> p)
+{
+  os << "Número: " << p.second << std::endl;
+  os << p.first << std::endl;
+
+  return os;
+}
+
+std::pair<Tablero,int> f(Tablero t)
+{
+  static int i=0;
+  return std::make_pair(t, i++);
+}
+
 int Conecta4::calcularMejorMovimiento()
 {
-  generarArbolMovimientos(arbol.raiz(), 0); // FIXME: Hardcoded value.
+  generarArbolMovimientos(arbol.raiz());
+  auto arbolInt = aplicarFuncion(arbol, f);
+
+  arbol.recorrer_por_niveles(arbol.raiz());
+  arbolInt.recorrer_por_niveles(arbolInt.raiz());
 }
