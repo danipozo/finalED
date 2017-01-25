@@ -5,6 +5,7 @@
 #include "tablero.h"
 #include "metricas.h"
 #include <utility>
+#include <functional>
 
 std::ostream& operator<<(std::ostream& os, std::pair<int,Tablero> p);
 
@@ -42,8 +43,8 @@ void aplicarFuncion(typename ArbolGeneral<A>::Nodo n, B(*fn)(A), ArbolGeneral<B>
   }
 }
 
-template <class A, class B>
-void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, B(*fn)(A), ArbolGeneral<B>& arbolB, typename ArbolGeneral<B>::Nodo n2)
+template <class A, class B, class FnTerm>
+void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, FnTerm fn_terminal, B(*fn_no_terminal)(A), ArbolGeneral<B>& arbolB, typename ArbolGeneral<B>::Nodo n2)
 {
   typename ArbolGeneral<A>::Nodo hijoA = n->izqda;
 
@@ -53,12 +54,12 @@ void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, B(*fn)(A), ArbolGener
   ArbolGeneral<B> aux;
 
   if(hijoA->izqda == 0) // hijoA es una hoja.
-    aux.AsignaRaiz(fn(hijoA->etiqueta));
-  else aux.AsignaRaiz(B());
+    aux.AsignaRaiz(fn_terminal(hijoA->etiqueta));
+  else aux.AsignaRaiz(fn_no_terminal(hijoA->etiqueta));
 
   arbolB.insertar_hijomasizquierda(n2, aux);
 
-  aplicarFuncionHojas(hijoA, fn, arbolB, n2->izqda);
+  aplicarFuncionHojas(hijoA, fn_terminal, fn_no_terminal, arbolB, n2->izqda);
 
   // Este nodo es necesario por la forma en que se insertan los nodos en un aŕbol
   // (no es consistente con la forma en que se recorren).
@@ -67,12 +68,12 @@ void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, B(*fn)(A), ArbolGener
   {
       aux = ArbolGeneral<B>();
       if(hijoA->izqda == 0) // hijoA es una hoja.
-        aux.AsignaRaiz(fn(hijoA->etiqueta));
-      else aux.AsignaRaiz(B());
+        aux.AsignaRaiz(fn_terminal(hijoA->etiqueta));
+      else aux.AsignaRaiz(fn_no_terminal(hijoA->etiqueta));
 
       arbolB.insertar_hermanoderecha(nodoAux, aux);
 
-      aplicarFuncionHojas(hijoA, fn, arbolB, nodoAux);
+      aplicarFuncionHojas(hijoA, fn_terminal, fn_no_terminal, arbolB, nodoAux);
 
       nodoAux = nodoAux->drcha;
   }
@@ -86,17 +87,17 @@ void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, B(*fn)(A), ArbolGener
  * El objetivo de esta función es poder usarla para evaluar las métricas solo en los tableros
  * finales.
  */
-template <class A, class B>
-ArbolGeneral<B> aplicarFuncionHojas(const ArbolGeneral<A>& arbol, B(*fn)(A))
+template <class A, class B, class FnTerm>
+ArbolGeneral<B> aplicarFuncionHojas(const ArbolGeneral<A>& arbol, FnTerm fn_terminal, B(*fn_no_terminal)(A))
 {
   ArbolGeneral<B> ret;
   if(arbol.empty())
     return ret;
 
   typename ArbolGeneral<A>::Nodo n = arbol.raiz();
-  ret.AsignaRaiz(B());
+  ret.AsignaRaiz(fn_no_terminal(n->etiqueta));
 
-  aplicarFuncionHojas(n, fn, ret, ret.raiz());
+  aplicarFuncionHojas(n, fn_terminal, fn_no_terminal, ret, ret.raiz());
 
   return ret;
 }

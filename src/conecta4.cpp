@@ -65,11 +65,22 @@ int f2(Tablero t)
   return 5;
 }
 
+std::pair<int,int> fn_no_terminal(std::pair<int,Tablero> t)
+{
+  return std::make_pair(t.first, 0);
+}
+
+std::pair<int,int> fn_terminal(std::pair<int,Tablero> t, int(*metrica)(Tablero))
+{
+  return std::make_pair(t.first, metrica(t.second));
+}
+
 int Conecta4::calcularMejorMovimiento()
 {
   generarArbolMovimientos(arbol.raiz());
   //auto arbolInt = aplicarFuncion(arbol, f);
-  auto arbolInt2 = aplicarFuncionHojas(arbol, metrica1);
+  auto fn_term = std::bind(fn_terminal, std::placeholders::_1, metrica1);
+  auto arbolInt2 = aplicarFuncionHojas(arbol, fn_term, fn_no_terminal);
 
   arbol.recorrer_por_niveles(arbol.raiz());
   //arbolInt.recorrer_por_niveles(arbolInt.raiz());
