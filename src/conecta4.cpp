@@ -111,11 +111,40 @@ std::pair<int,int> fn_no_terminal(std::pair<int,Tablero> t)
   return std::make_pair(t.first, 0);
 }
 
-std::pair<int,int> fn_terminal(std::pair<int,Tablero> t, int(*metrica)(Tablero))
+int valorHeuristico(ArbolGeneral<std::pair<int,int>>::Nodo n)
 {
-  return std::make_pair(t.first, t.second.GetTurno() == 1 ? metrica(t.second) : -metrica(t.second));
+  if(!n->izqda)
+    return n->etiqueta.second;
+
+  int ret = valorHeuristico(n->izqda);
+  ArbolGeneral<std::pair<int,int>>::Nodo hijo = n->izqda; 
+
+  while(hijo = hijo->drcha)
+  {
+    if(valorHeuristico(hijo) > ret)
+      ret = valorHeuristico(hijo);
+  }
+
+  return ret;
 }
 
+//FIXME: Propagar valores correctamente.
+void Conecta4::propagarValoresHeuristicos(ArbolGeneral<std::pair<int,int>>::Nodo n)
+{
+  if(!n->izqda)
+    return;
+
+  ArbolGeneral<std::pair<int,int>>::Nodo hijo = n->izqda;
+  hijo->etiqueta.second = valorHeuristico(hijo);
+
+  while(hijo = hijo->drcha)
+    hijo->etiqueta.second = valorHeuristico(hijo);
+}
+
+std::pair<int,int> fn_terminal(std::pair<int,Tablero> t, int(*metrica)(Tablero))
+{
+  return std::make_pair(t.first, t.second.GetTurno() == 2 ? metrica(t.second) : -metrica(t.second));
+}
 
 //FIXME: Implementar.
 int Conecta4::calcularMejorMovimiento()
@@ -123,10 +152,13 @@ int Conecta4::calcularMejorMovimiento()
   //WARNING: puede fallar después de la primera llamada.
   generarArbolMovimientos(arbol.raiz());
 
-  arbol.recorrer_por_niveles(arbol.raiz());
   auto fn_term = std::bind(fn_terminal, std::placeholders::_1, metrica);
   arbolHeuristico = aplicarFuncionHojas(arbol, fn_term, fn_no_terminal);
 
-  arbolHeuristico.recorrer_por_niveles(arbolHeuristico.raiz());
-  std::cout << std::endl;
+  //FIXME: implementar función que propague hacia arriba los valores heurísticos máximos.
+  //propagarValoresHeuristicos(arbolHeuristico.raiz()->izqda->drcha);
+
+  //FIXME: queda todo el árbol heurístico colgando del nodo izquerdo.
+  //arbolHeuristico.recorrer_por_niveles(arbolHeuristico.raiz());
+  //arbol.recorrer_por_niveles(arbol.raiz()->izqda);
 }

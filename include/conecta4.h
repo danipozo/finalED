@@ -39,6 +39,7 @@ class Conecta4
   int (*metrica)(Tablero);
 
   void generarArbolMovimientos(ArbolGeneral<std::pair<int,Tablero>>::Nodo n, int p = 0);
+  void propagarValoresHeuristicos(ArbolGeneral<std::pair<int,int>>::Nodo n);
 public:
   Conecta4() { }
   //FIXME: Eliminar parámetro por defecto.
