@@ -1,100 +1,5 @@
 #include "conecta4.h"
 
-std::ostream& operator<<(std::ostream& os, std::pair<int,Tablero> p)
-{
-  os <<  p.second;
-
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, std::tuple<int,int,Tablero> t)
-{
-  os << "Jugada: " << std::get<0>(t) << std::endl;
-  os << "Valor: " << std::get<1>(t) << std::endl;
-  os << std::get<2>(t) << std::endl;
-}
-
-std::ostream& operator<<(std::ostream& os, std::pair<int,int> p)
-{
-  os << p.second;
-
-  return os;
-}
-
-//FIXME: Obsoleta. Limpiar.
-//FIXME: altera la estructura del árbol.
-// template <class A, class B, class FnTerm>
-// void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, FnTerm fn_terminal, B(*fn_no_terminal)(A), ArbolGeneral<B>& arbolB, typename ArbolGeneral<B>::Nodo n2)
-// {
-//   typename ArbolGeneral<A>::Nodo hijoA = n->izqda;
-
-//   if(!hijoA)
-//     return;
-
-//   ArbolGeneral<B> aux;
-
-//   if(hijoA->izqda == 0) // hijoA es una hoja.
-//     aux.AsignaRaiz(fn_terminal(hijoA->etiqueta));
-//   else
-//     aux.AsignaRaiz(fn_no_terminal(hijoA->etiqueta));
-
-//   arbolB.insertar_hijomasizquierda(n2, aux);
-
-//   aplicarFuncionHojas(hijoA, fn_terminal, fn_no_terminal, arbolB, n2->izqda);
-
-//   // Este nodo es necesario por la forma en que se insertan los nodos en un aŕbol
-//   // (no es consistente con la forma en que se recorren).
-//   typename ArbolGeneral<B>::Nodo nodoAux = n2->izqda;
-//   while(hijoA = hijoA->drcha) // WARNING: Not sure of condition.
-//   {
-//       aux = ArbolGeneral<B>();
-//       if(hijoA->izqda == 0) // hijoA es una hoja.
-//         aux.AsignaRaiz(fn_terminal(hijoA->etiqueta));
-//       else
-//         aux.AsignaRaiz(fn_no_terminal(hijoA->etiqueta));
-
-//       arbolB.insertar_hermanoderecha(nodoAux, aux);
-
-//       nodoAux = nodoAux->drcha;
-//       aplicarFuncionHojas(hijoA, fn_terminal, fn_no_terminal, arbolB, nodoAux);
-//   }
-// }
-
-//FIXME: TEST
-template<class A>
-void recorrerImprimir(typename ArbolGeneral<A>::Nodo n, int p)
-{
-  if(!n->izqda)
-    return;
-
-  std::cout << "Profundidad: " << p << " hijo izquierda: " << n->izqda->etiqueta << std::endl;
-  recorrerImprimir<A>(n->izqda, p+1);
-
-  typename ArbolGeneral<A>::Nodo aux = n->izqda;
-
-  while(aux = aux->drcha)
-  {
-    std::cout << "Profundidad: " << p << " hijo derecha: " << aux->etiqueta << std::endl;
-    recorrerImprimir<A>(aux, p+1);
-  }
-}
-
-//FIXME: Obsoleta. Limpiar.
-// template <class A, class B, class FnTerm>
-// ArbolGeneral<B> aplicarFuncionHojas(const ArbolGeneral<A>& arbol, FnTerm fn_terminal, B(*fn_no_terminal)(A))
-// {
-//   ArbolGeneral<B> ret;
-//   if(arbol.empty())
-//     return ret;
-
-//   typename ArbolGeneral<A>::Nodo n = arbol.raiz();
-//   ret.AsignaRaiz(fn_no_terminal(n->etiqueta));
-
-//   aplicarFuncionHojas(n, fn_terminal, fn_no_terminal, ret, ret.raiz());
-
-//   return ret;
-// }
-
 
 void Conecta4::modificarMetrica(int (*m)(Tablero))
 {
@@ -127,7 +32,13 @@ void Conecta4::generarArbolMovimientos(ArbolGeneral<std::tuple<int,int,Tablero>>
     copiaTablero = std::get<2>(n->etiqueta);
     copiaTablero.colocarFicha(i);
 
-    ArbolGeneral<std::tuple<int,int,Tablero>> a(std::make_tuple(i,metrica(copiaTablero),copiaTablero));
+    int param;
+
+    if(p == (profundidad-1))
+      param = copiaTablero.GetTurno() == 2 ? metrica(copiaTablero) : -metrica(copiaTablero);
+    else param = 0;
+
+    ArbolGeneral<std::tuple<int,int,Tablero>> a(std::make_tuple(i,param,copiaTablero));
     arbol.insertar_hijomasizquierda(n, a);
 
     generarArbolMovimientos(n->izqda, p+1);
@@ -140,13 +51,13 @@ std::pair<int,int> fn_no_terminal(std::pair<int,Tablero> t)
   return std::make_pair(t.first, 0);
 }
 
-int valorHeuristico(ArbolGeneral<std::pair<int,int>>::Nodo n)
+int valorHeuristico(ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo n)
 {
   if(!n->izqda)
-    return n->etiqueta.second;
+    return std::get<1>(n->etiqueta);
 
   int ret = valorHeuristico(n->izqda);
-  ArbolGeneral<std::pair<int,int>>::Nodo hijo = n->izqda; 
+  ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo hijo = n->izqda; 
 
   while(hijo = hijo->drcha)
   {
@@ -157,17 +68,22 @@ int valorHeuristico(ArbolGeneral<std::pair<int,int>>::Nodo n)
   return ret;
 }
 
-//FIXME: Propagar valores correctamente.
-void Conecta4::propagarValoresHeuristicos(ArbolGeneral<std::pair<int,int>>::Nodo n)
+void Conecta4::propagarValoresHeuristicos(ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo n)
 {
   if(!n->izqda)
     return;
 
-  ArbolGeneral<std::pair<int,int>>::Nodo hijo = n->izqda;
-  hijo->etiqueta.second = valorHeuristico(hijo);
+  ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo hijo = n->izqda;
+  std::get<1>(hijo->etiqueta) = valorHeuristico(hijo);
 
   while(hijo = hijo->drcha)
-    hijo->etiqueta.second = valorHeuristico(hijo);
+    std::get<1>(hijo->etiqueta) = valorHeuristico(hijo);
+}
+
+void Conecta4::actualizarTablero(const Tablero& t)
+{
+  arbol = ArbolGeneral<std::tuple<int,int,Tablero>>();
+  arbol.AsignaRaiz(std::make_tuple(-1,0,t));
 }
 
 std::pair<int,int> fn_terminal(std::pair<int,Tablero> t, int(*metrica)(Tablero))
@@ -175,24 +91,23 @@ std::pair<int,int> fn_terminal(std::pair<int,Tablero> t, int(*metrica)(Tablero))
   return std::make_pair(t.first, t.second.GetTurno() == 2 ? metrica(t.second) : -metrica(t.second));
 }
 
-//FIXME: Implementar.
 int Conecta4::calcularMejorMovimiento()
 {
-  //WARNING: puede fallar después de la primera llamada.
   generarArbolMovimientos(arbol.raiz());
-  arbol.recorrer_por_niveles(arbol.raiz());
+  propagarValoresHeuristicos(arbol.raiz());
 
-  auto fn_term = std::bind(fn_terminal, std::placeholders::_1, metrica);
-  //arbolHeuristico = aplicarFuncionHojas(arbol, fn_term, fn_no_terminal);
+  auto n = arbol.raiz()->izqda;
+  int ret = std::get<0>(n->etiqueta);
+  int maxValor = std::get<1>(n->etiqueta);
 
-  //arbolHeuristico = ArbolGeneral<std::pair<int,int>>();
-  //arbolHeuristico.AsignaRaiz(fn_no_terminal(arbol.raiz()->etiqueta));
-  //aplicarFuncionHojas(arbol.raiz(), fn_term, fn_no_terminal, arbolHeuristico, arbolHeuristico.raiz());
+  for(; n = n->drcha;)
+  {
+    if(maxValor < std::get<1>(n->etiqueta))
+    {
+      maxValor = std::get<1>(n->etiqueta);
+      ret = std::get<0>(n->etiqueta);
+    }
+  }
 
-  //FIXME: implementar función que propague hacia arriba los valores heurísticos máximos.
-  //propagarValoresHeuristicos(arbolHeuristico.raiz()->izqda->drcha);
-
-  //FIXME: queda todo el árbol heurístico colgando del nodo izquierdo.
-  //arbol.recorrer_por_niveles(arbol.raiz());
-  //recorrerImprimir<std::pair<int,int>>(arbolHeuristico.raiz()->drcha, 1);
-}
+  return ret;
+ }

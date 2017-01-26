@@ -9,10 +9,9 @@ int main()
   Tablero t(4, 2);
 
   Conecta4 c(t, 7);
-  c.calcularMejorMovimiento();
+  int m = c.calcularMejorMovimiento();
 
-  auto a = c.obtenerArbol();
-
+  std::cout << "Mejor movimiento: " << m << std::endl;
   //a.recorrer_por_niveles(a.raiz());
 
   return 0;
