@@ -2,7 +2,7 @@
 
 std::ostream& operator<<(std::ostream& os, std::pair<int,Tablero> p)
 {
-  os << p.second;
+  os <<  p.second;
 
   return os;
 }
@@ -14,15 +14,77 @@ std::ostream& operator<<(std::ostream& os, std::pair<int,int> p)
   return os;
 }
 
+template <class A, class B, class FnTerm>
+void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, FnTerm fn_terminal, B(*fn_no_terminal)(A), ArbolGeneral<B>& arbolB, typename ArbolGeneral<B>::Nodo n2)
+{
+  typename ArbolGeneral<A>::Nodo hijoA = n->izqda;
+
+  if(!hijoA)
+    return;
+
+  ArbolGeneral<B> aux;
+
+  if(hijoA->izqda == 0) // hijoA es una hoja.
+    aux.AsignaRaiz(fn_terminal(hijoA->etiqueta));
+  else aux.AsignaRaiz(fn_no_terminal(hijoA->etiqueta));
+
+  arbolB.insertar_hijomasizquierda(n2, aux);
+
+  aplicarFuncionHojas(hijoA, fn_terminal, fn_no_terminal, arbolB, n2->izqda);
+
+  // Este nodo es necesario por la forma en que se insertan los nodos en un aŕbol
+  // (no es consistente con la forma en que se recorren).
+  typename ArbolGeneral<B>::Nodo nodoAux = n2->izqda;
+  while(hijoA = hijoA->drcha) // WARNING: Not sure of condition.
+  {
+      aux = ArbolGeneral<B>();
+      if(hijoA->izqda == 0) // hijoA es una hoja.
+        aux.AsignaRaiz(fn_terminal(hijoA->etiqueta));
+      else aux.AsignaRaiz(fn_no_terminal(hijoA->etiqueta));
+
+      arbolB.insertar_hermanoderecha(nodoAux, aux);
+
+      aplicarFuncionHojas(hijoA, fn_terminal, fn_no_terminal, arbolB, nodoAux);
+
+      nodoAux = nodoAux->drcha;
+  }
+}
+
+
+template <class A, class B, class FnTerm>
+ArbolGeneral<B> aplicarFuncionHojas(const ArbolGeneral<A>& arbol, FnTerm fn_terminal, B(*fn_no_terminal)(A))
+{
+  ArbolGeneral<B> ret;
+  if(arbol.empty())
+    return ret;
+
+  typename ArbolGeneral<A>::Nodo n = arbol.raiz();
+  ret.AsignaRaiz(fn_no_terminal(n->etiqueta));
+
+  aplicarFuncionHojas(n, fn_terminal, fn_no_terminal, ret, ret.raiz());
+
+  return ret;
+}
+
+
+void Conecta4::modificarMetrica(int (*m)(Tablero))
+{
+  metrica = m;
+}
+
 void modificarTurno(int t, Tablero& tab)
 {
   if(tab.cambiarTurno() != t)
     tab.cambiarTurno();
 }
 
+
 void Conecta4::generarArbolMovimientos(ArbolGeneral<std::pair<int,Tablero>>::Nodo n, int p)
 {
   if(p == profundidad)
+    return;
+
+  if(n->etiqueta.second.quienGana())
     return;
 
   Tablero copiaTablero(n->etiqueta.second.GetFilas(), n->etiqueta.second.GetColumnas());
@@ -43,27 +105,6 @@ void Conecta4::generarArbolMovimientos(ArbolGeneral<std::pair<int,Tablero>>::Nod
   }
 }
 
-// FIXME: ONLY FOR TESTING PURPOSES.
-#include <utility>
-
-std::ostream& operator<<(std::ostream& os, std::pair<Tablero,int> p)
-{
-  os << "Número: " << p.second << std::endl;
-  os << p.first << std::endl;
-
-  return os;
-}
-
-std::pair<Tablero,int> f(Tablero t)
-{
-  static int i=0;
-  return std::make_pair(t, i++);
-}
-
-int f2(Tablero t)
-{
-  return 5;
-}
 
 std::pair<int,int> fn_no_terminal(std::pair<int,Tablero> t)
 {
@@ -72,17 +113,20 @@ std::pair<int,int> fn_no_terminal(std::pair<int,Tablero> t)
 
 std::pair<int,int> fn_terminal(std::pair<int,Tablero> t, int(*metrica)(Tablero))
 {
-  return std::make_pair(t.first, metrica(t.second));
+  return std::make_pair(t.first, t.second.GetTurno() == 1 ? metrica(t.second) : -metrica(t.second));
 }
 
+
+//FIXME: Implementar.
 int Conecta4::calcularMejorMovimiento()
 {
+  //WARNING: puede fallar después de la primera llamada.
   generarArbolMovimientos(arbol.raiz());
-  //auto arbolInt = aplicarFuncion(arbol, f);
-  auto fn_term = std::bind(fn_terminal, std::placeholders::_1, metrica1);
-  auto arbolInt2 = aplicarFuncionHojas(arbol, fn_term, fn_no_terminal);
 
   arbol.recorrer_por_niveles(arbol.raiz());
-  //arbolInt.recorrer_por_niveles(arbolInt.raiz());
-  arbolInt2.recorrer_por_niveles(arbolInt2.raiz());
+  auto fn_term = std::bind(fn_terminal, std::placeholders::_1, metrica);
+  arbolHeuristico = aplicarFuncionHojas(arbol, fn_term, fn_no_terminal);
+
+  arbolHeuristico.recorrer_por_niveles(arbolHeuristico.raiz());
+  std::cout << std::endl;
 }

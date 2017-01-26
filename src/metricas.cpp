@@ -3,11 +3,12 @@
 int metrica1(Tablero t)
 {
 
-    if(t.quienGana() == t.GetTurno())
+  if(t.quienGana())
+    {
+      std::cout << "Turno: " << t.GetTurno() << " gana: " << t.quienGana() << std::endl;
+      std::cout << t << std::endl;
       return 1000;
-
-    else if(t.quienGana() == (t.GetTurno() == 1 ? 2 : 1))
-      return -1000;
+    }
 
     return 0;
 }
