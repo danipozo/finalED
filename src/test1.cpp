@@ -8,7 +8,7 @@ int main()
 {
   Tablero t(4, 2);
 
-  Conecta4 c(t, 8);
+  Conecta4 c(t, 7);
   c.calcularMejorMovimiento();
 
   auto a = c.obtenerArbol();

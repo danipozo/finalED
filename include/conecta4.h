@@ -5,6 +5,7 @@
 #include "tablero.h"
 #include "metricas.h"
 #include <utility>
+#include <tuple>
 #include <functional>
 
 std::ostream& operator<<(std::ostream& os, std::pair<int,Tablero> p);
@@ -33,22 +34,22 @@ ArbolGeneral<B> aplicarFuncionHojas(const ArbolGeneral<A>& arbol, FnTerm fn_term
 
 class Conecta4
 {
-  ArbolGeneral<std::pair<int,Tablero>> arbol;
+  ArbolGeneral<std::tuple<int,int,Tablero>> arbol; // Jugada/valor/tablero
   ArbolGeneral<std::pair<int,int>> arbolHeuristico; // Pares jugada/valor heurístico.
   int profundidad;
   int (*metrica)(Tablero);
 
-  void generarArbolMovimientos(ArbolGeneral<std::pair<int,Tablero>>::Nodo n, int p = 0);
+  void generarArbolMovimientos(ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo n, int p = 0);
   void propagarValoresHeuristicos(ArbolGeneral<std::pair<int,int>>::Nodo n);
 public:
   Conecta4() { }
   //FIXME: Eliminar parámetro por defecto.
-  Conecta4(const Tablero& t, int profundidad, int(*metrica)(Tablero) = metrica1) : arbol(std::make_pair(-1, t)), profundidad(profundidad), metrica(metrica) { }
+  Conecta4(const Tablero& t, int profundidad, int(*metrica)(Tablero) = metrica1) : arbol(std::make_tuple(-1, 0, t)), profundidad(profundidad), metrica(metrica) { }
 
   int calcularMejorMovimiento();
   void modificarMetrica(int(*m)(Tablero));
 
-  ArbolGeneral<std::pair<int,Tablero>>& obtenerArbol() { return arbol; }
+  ArbolGeneral<std::tuple<int,int,Tablero>>& obtenerArbol() { return arbol; }
 };
 
 
