@@ -1,3 +1,10 @@
+/**
+ * @file   conecta4.h
+ * @author Daniel Pozo Escalona
+ * 
+ * @brief  Fichero de cabecera del TDA Conecta4.
+ */
+
 #ifndef CONECTA4_H
 #define CONECTA4_H
 
@@ -8,46 +15,79 @@
 #include <tuple>
 #include <functional>
 
-std::ostream& operator<<(std::ostream& os, std::pair<int,Tablero> p);
 
-std::ostream& operator<<(std::ostream& os, std::pair<int,int> p);
-
-template <class A, class B, class FnTerm>
-void aplicarFuncionHojas(typename ArbolGeneral<A>::Nodo n, FnTerm fn_terminal,
-                         B(*fn_no_terminal)(A), ArbolGeneral<B>& arbolB,
-                         typename ArbolGeneral<B>::Nodo n2);
-
-/*
- * Esta función creará un árbol con elementos de tipo B, con la misma estructura que el
- * primer árbol, cuyas hojas serán el resultado de aplicar *fn_terminal* a las hojas
- * del primer árbol, y *fn_no_terminal* al resto de nodos.
+/**
+ * @brief TDA Conecta4.
  *
- * El objetivo de esta función es poder usarla para evaluar las métricas solo en los tableros
- * finales. Esto nos servirá posteriormente para aplicar las métricas sobre los árboles de
- * forma cómoda, pudiendo aplicarla a todos los tableros del árbol de una vez, y después propagar
- * hacia arriba los valores heurísticos de los tableros (como en el algoritmo negamax) de una
- * forma genérica, sin necesidad de que lo haga cada métrica.
+ *
+ * Se encarga de explorar el árbol de posibilidades de una partida a partir de un tablero dado. Usa
+ * una implementación del algoritmo negamax para hallar el movimiento óptimo a partir de una métrica.
+ * 
  */
-template <class A, class B, class FnTerm>
-ArbolGeneral<B> aplicarFuncionHojas(const ArbolGeneral<A>& arbol, FnTerm fn_terminal,
-                                    B(*fn_no_terminal)(A));
 
 class Conecta4
 {
-  ArbolGeneral<std::tuple<int,int,Tablero>> arbol; // Jugada/valor/tablero
-  int profundidad;
-  int (*metrica)(Tablero);
+  /**
+   * @brief Árbol de posibilidades. Cada nodo contiene una tupla
+   * (últ. mov., valor heurístico, tablero).
+   * 
+   */
 
+  ArbolGeneral<std::tuple<int,int,Tablero>> arbol;
+  int profundidad;		/**< Profundidad a la que se quiere explorar. */
+  int (*metrica)(Tablero);	/**< Métrica con la que se evalúan los tableros. */
+
+  /** 
+   * Se encarga de generar el árbol de posibilidades y evaluar las hojas con la
+   * métrica seleccionada.
+   * 
+   * @param n Nodo raíz del árbol.
+   * @param p Profundidad inicial (cero).
+   */
   void generarArbolMovimientos(ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo n, int p = 0);
+
+  /** 
+   * Se encarga de propagar hacia los hijos directos de la raíz los valores heurísticos
+   * de las hojas.
+   * 
+   * @param n Nodo a partir del cual se quiere explorar el árbol y propagar los valores.
+   */
   void propagarValoresHeuristicos(ArbolGeneral<std::tuple<int,int,Tablero>>::Nodo n);
 public:
+  /**
+   * Constructor por defecto.
+   */
+
   Conecta4() { }
+  /** 
+   * Constructor con los datos relevantes para la partida.
+   * 
+   * @param t Tablero inicial.
+   * @param profundidad
+   * @param metrica Métrica que se quiere emplear.
+   */
   Conecta4(const Tablero& t, int profundidad, int(*metrica)(Tablero)) : arbol(std::make_tuple(-1, 0, t)), profundidad(profundidad), metrica(metrica) { }
 
+  /** 
+   * @return Columna que indica el mejor movimiento.
+   */
   int calcularMejorMovimiento();
+  /** 
+   * El objeto pasa a emplear la métrica @e m.
+   * @param m 
+   */
   void modificarMetrica(int(*m)(Tablero));
+  /** 
+   * Destruye el árbol y lo inicializa como uno con un solo nodo, que contiene
+   * el tablero @e t.
+   * 
+   * @param t 
+   */
   void actualizarTablero(const Tablero& t);
 
+  /** 
+   * @return El árbol contenido en el objeto.
+   */
   ArbolGeneral<std::tuple<int,int,Tablero>>& obtenerArbol() { return arbol; }
 };
 
